@@ -27,9 +27,9 @@ type NavigatorConnection = {
 
 const sizeClass: Record<MascotSize, string> = {
   xs: 'h-7 w-7',
-  sm: 'h-12 w-12',
-  md: 'h-20 w-20',
-  lg: 'h-32 w-32',
+  sm: 'h-12.5 w-12.5',
+  md: 'h-20.5 w-20.5',
+  lg: 'h-32.5 w-32.5',
   xl: 'h-48 w-48',
 }
 

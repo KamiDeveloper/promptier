@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Bookmark, Images, Sparkles, WifiOff } from 'lucide-react'
+import { ArrowRight, Bookmark, Download, Sparkles, WifiOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/authClient'
 import { getGetStartedPath } from '@/lib/auth/redirect'
@@ -22,18 +22,55 @@ const promptLines = [
 const featureTiles = [
   { label: 'Vault', icon: Bookmark, text: 'Prompts privados, versionados y listos para copiar.' },
   { label: 'AI Assist', icon: Sparkles, text: 'Mejora, adapta, puntua y genera variantes.' },
-  { label: 'References', icon: Images, text: 'Imagenes locales optimizadas para cada prompt.' },
   { label: 'Offline', icon: WifiOff, text: 'Trabajo local-first aunque la red falle.' },
 ]
 
 type ProfileData = { nickname: string } | null
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
 
 export default function RootPage() {
   const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
   const [profile, setProfile] = useState<ProfileData | undefined>(undefined)
   const [profileCheckFailed, setProfileCheckFailed] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [installed, setInstalled] = useState(false)
+  const [installState, setInstallState] = useState<'idle' | 'waiting' | 'dismissed'>('waiting')
   const userId = session?.user?.id
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
+
+    if (isStandalone) {
+      setInstalled(true)
+      setInstallState('idle')
+      return
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPrompt(event as BeforeInstallPromptEvent)
+      setInstallState('idle')
+    }
+
+    const handleInstalled = () => {
+      setInstalled(true)
+      setInstallPrompt(null)
+      setInstallState('idle')
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleInstalled)
+    }
+  }, [])
 
   useEffect(() => {
     if (isPending) return
@@ -78,16 +115,36 @@ export default function RootPage() {
   }, [isPending, router, userId])
 
   const isCheckingAccess = isPending || (!!userId && profile === undefined && !profileCheckFailed)
+  const installStatusText = installed
+    ? 'Instalada en este dispositivo.'
+    : installPrompt
+      ? 'App local-first lista para instalar.'
+      : installState === 'dismissed'
+        ? 'Puedes volver a intentarlo desde el navegador.'
+        : 'Disponible cuando el navegador habilite la instalacion.'
+
+  async function handleInstall() {
+    if (installed) return
+
+    if (!installPrompt) {
+      setInstallState('dismissed')
+      return
+    }
+
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+    setInstallPrompt(null)
+    setInstallState(choice.outcome === 'accepted' ? 'idle' : 'dismissed')
+  }
 
   return (
     <main className="motion-page min-h-dvh bg-midnight-oil text-ghost-white">
       <section className="mx-auto flex min-h-dvh w-full max-w-(--page-max-width) flex-col px-16 py-7 sm:px-32 sm:py-12 lg:px-[64px] lg:py-10">
         <header className="motion-scanline flex flex-wrap items-center justify-between gap-x-[24px] gap-y-16 border-b border-muted-ash pb-7 sm:flex-nowrap sm:pb-10 lg:pb-10">
           <Link href="/" aria-label="Promptier home" className="motion-press inline-flex items-center text-ghost-white hover:text-dim-gray">
-            <Logo variant="imagotype" className="h-[24px] w-auto sm:h-7.5 md:h-10" />
+            <Logo variant="imagotype" className="h-7.5 md:h-10" />
           </Link>
           <nav className="ml-auto flex min-w-0 items-center gap-[20px] text-[11px] uppercase tracking-widest text-dim-gray sm:gap-10 sm:text-[13px] lg:gap-[64px]">
-            <Link href="/vault" className="motion-press hover:text-ghost-white">Vault</Link>
             <Link href="/public-prompts" className="motion-press hover:text-ghost-white">Prompterest</Link>
           </nav>
         </header>
@@ -98,9 +155,11 @@ export default function RootPage() {
               <div className="flex items-start justify-between gap-16">
                 <div>
                 <p className="mb-3 text-[11px] uppercase tracking-widest text-dim-gray sm:text-[12px]">099-grade prompt workspace</p>
-                <Logo variant="logotype" className="h-12 w-auto md:mt-20 text-ghost-white" />
+                <div className='flex w-full md:w-auto gap-2'>
+                  <MascotAnimation variant="greeting" size="sm" crop="tight" className="lg:hidden" />
+                <Logo variant="logotype" className=" h-12 md:mt-20 text-ghost-white" />
                 </div>
-                <MascotAnimation variant="greeting" size="lg" crop="tight" className="hidden sm:inline-grid" />
+                </div>
               </div>
 
               <div className="max-w-xl">
@@ -144,6 +203,15 @@ export default function RootPage() {
                   </Button>
                 </Link>
               )}
+              <Button
+                variant="primary"
+                className="pwa-install-shiny min-h-14 w-full justify-between overflow-hidden sm:hidden"
+                onClick={handleInstall}
+                disabled={installed}
+              >
+                <span>{installed ? 'App instalada' : 'Instalar App'}</span>
+                <Download size={16} aria-hidden="true" />
+              </Button>
             </div>
           </section>
 
@@ -197,7 +265,12 @@ export default function RootPage() {
             </div>
 
             <div className="grid gap-16 sm:grid-cols-2 xl:grid-cols-4">
-              {featureTiles.map(({ label, icon: Icon, text }) => (
+              <InstallPromptTile
+                installed={installed}
+                statusText={installStatusText}
+                onInstall={handleInstall}
+              />
+              {featureTiles.slice().map(({ label, icon: Icon, text }) => (
                 <article key={label} className="motion-card min-h-33 rounded-(--radius-card) border border-muted-ash bg-steel-gray p-16">
                   <div className="mb-16 flex h-10 w-10 items-center justify-center rounded-(--radius-button) border border-muted-ash">
                     <Icon size={18} aria-hidden="true" />
@@ -216,5 +289,36 @@ export default function RootPage() {
         </footer>
       </section>
     </main>
+  )
+}
+
+function InstallPromptTile({
+  installed,
+  statusText,
+  onInstall,
+}: {
+  installed: boolean
+  statusText: string
+  onInstall: () => void
+}) {
+  return (
+    <article className="motion-card relative min-h-33 overflow-hidden rounded-(--radius-card) border border-ghost-white/40 bg-steel-gray p-16">
+      <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-ghost-white),transparent)] opacity-50" aria-hidden="true" />
+      <div className="mb-2 flex items-start gap-8">
+        <MascotAnimation variant="flexing" size="xs" crop="tight" />
+        <h3 className="text-[13px] font-bold uppercase tracking-widest">Instalar Promptier</h3>
+      </div>
+      <p className="mt-8 min-h-8.5 text-[12px] leading-relaxed text-dim-gray">{statusText}</p>
+      <Button
+        variant="primary"
+        size="sm"
+        className="pwa-install-shiny mt-2 w-full justify-between overflow-hidden"
+        onClick={onInstall}
+        disabled={installed}
+      >
+        <span>{installed ? 'Instalado' : 'Instalar App'}</span>
+        <Download size={15} aria-hidden="true" />
+      </Button>
+    </article>
   )
 }

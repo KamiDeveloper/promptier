@@ -1,0 +1,245 @@
+/* ─── Tailwind v4 CSS-first ──────────────────────────────────────────────── */
+@import "tailwindcss";
+
+/* ─── Design System Tokens — DESIGN.md §099 ─────────────────────────────── */
+@theme {
+  /* Colors — strictly achromatic palette */
+  --color-midnight-oil: #0f0f0f;
+  --color-ghost-white:  #efefef;
+  --color-steel-gray:   #1d1d1d;
+  --color-muted-ash:    #383838;
+  --color-dim-gray:     #888888;
+
+  /* Typography — Soehne Mono / Space Mono fallback */
+  --font-mono: "Space Mono", "Fira Code", ui-monospace, "Cascadia Code",
+               "Roboto Mono", monospace;
+
+  /* Border radius */
+  --radius-none:   0px;
+  --radius-card:   10px;
+  --radius-input:  10px;
+  --radius-button: 10px;
+
+  /* Spacing scale (base 4px) */
+  --spacing-5:  5px;
+  --spacing-6:  6px;
+  --spacing-8:  8px;
+  --spacing-16: 16px;
+  --spacing-19: 19px;
+  --spacing-26: 26px;
+  --spacing-27: 27px;
+  --spacing-32: 32px;
+
+  /* Layout */
+  --page-max-width:  1600px;
+  --section-gap:     48px;
+  --element-gap:     16px;
+
+  /* Letter spacing */
+  --tracking-terminal: 0.24px;
+
+  /* Motion */
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 190ms;
+  --motion-duration-slow: 320ms;
+  --motion-ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Base styles ────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--color-midnight-oil);
+  color: var(--color-ghost-white);
+  letter-spacing: var(--tracking-terminal);
+  line-height: 1.4;
+  min-height: 100dvh;
+  /* no box-shadow anywhere — hierarchy through surfaces and borders */
+  box-shadow: none;
+}
+
+/* ─── Focus styles — accessible, terminal aesthetic ─────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-ghost-white);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ─── Scrollbar — minimal, achromatic ───────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track  { background: var(--color-midnight-oil); }
+::-webkit-scrollbar-thumb  { background: var(--color-muted-ash); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-dim-gray); }
+
+/* ─── Selection ─────────────────────────────────────────────────────────── */
+::selection {
+  background-color: var(--color-ghost-white);
+  color: var(--color-midnight-oil);
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────────── */
+.font-terminal {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-terminal);
+}
+
+.surface-card   { background-color: var(--color-steel-gray); }
+.surface-page   { background-color: var(--color-midnight-oil); }
+.border-subtle  { border-color: var(--color-muted-ash); }
+.border-dim     { border-color: var(--color-dim-gray); }
+.text-secondary { color: var(--color-dim-gray); }
+
+/* ─── No shadows anywhere (spec requirement) ─────────────────────────────── */
+@keyframes motion-fade-up {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes motion-scale-in {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes motion-toast-in {
+  from { opacity: 0; transform: translate3d(12px, 8px, 0) scale(0.98); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes motion-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes motion-soft-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes motion-scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.motion-page {
+  animation: motion-fade-up var(--motion-duration-slow) var(--motion-ease-snap) both;
+}
+
+.motion-panel {
+  animation: motion-scale-in var(--motion-duration-slow) var(--motion-ease-snap) both;
+}
+
+.motion-list > * {
+  animation: motion-fade-up var(--motion-duration-slow) var(--motion-ease-snap) both;
+  animation-delay: calc(var(--motion-index, 0) * 38ms);
+}
+
+.motion-card {
+  position: relative;
+  transition:
+    transform var(--motion-duration-base) var(--motion-ease-out),
+    border-color var(--motion-duration-base) var(--motion-ease-out),
+    background-color var(--motion-duration-base) var(--motion-ease-out),
+    opacity var(--motion-duration-base) var(--motion-ease-out);
+  will-change: transform;
+}
+
+.motion-card:hover {
+  transform: translate3d(0, -1px, 0);
+}
+
+.motion-press {
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-out),
+    border-color var(--motion-duration-base) var(--motion-ease-out),
+    background-color var(--motion-duration-base) var(--motion-ease-out),
+    color var(--motion-duration-base) var(--motion-ease-out),
+    opacity var(--motion-duration-base) var(--motion-ease-out);
+}
+
+.motion-press:active:not(:disabled) {
+  transform: scale(0.965);
+}
+
+.motion-toast {
+  animation: motion-toast-in var(--motion-duration-slow) var(--motion-ease-snap) both;
+}
+
+.motion-modal-backdrop {
+  animation: motion-fade-up var(--motion-duration-base) var(--motion-ease-out) both;
+}
+
+.motion-modal-panel {
+  animation: motion-scale-in var(--motion-duration-slow) var(--motion-ease-snap) both;
+}
+
+.motion-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-steel-gray);
+  border: 1px solid var(--color-muted-ash);
+}
+
+.motion-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  animation: motion-shimmer 1300ms var(--motion-ease-out) infinite;
+}
+
+.motion-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.motion-scanline::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-ghost-white), transparent);
+  opacity: 0.24;
+  animation: motion-scan 2600ms linear infinite;
+}
+
+.motion-loading-dots {
+  min-width: 3ch;
+  animation: motion-soft-pulse 900ms var(--motion-ease-out) infinite;
+}
+
+.motion-busy {
+  cursor: progress;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+* { box-shadow: none !important; }

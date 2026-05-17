@@ -1,0 +1,13 @@
+-- Migration 000: run order
+-- Execute in this order:
+--   001_profiles.sql
+--   003_collections.sql     ← before prompts (prompts references collections)
+--   002_prompts.sql
+--   004_public_prompts.sql
+--   005_sync_operations.sql
+--   006_templates.sql
+--   007_public_prompt_cover.sql
+--   008_user_ai_keys.sql
+--
+-- Neon Auth schema (neon_auth.users) is managed by the Neon Auth service.
+-- These migrations only create app-level tables.

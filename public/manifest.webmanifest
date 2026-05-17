@@ -1,0 +1,18 @@
+{
+  "name": "Promptier",
+  "short_name": "Promptier",
+  "description": "El Pinterest de prompts para generación y edición de imagen.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F0F0F",
+  "theme_color": "#0F0F0F",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

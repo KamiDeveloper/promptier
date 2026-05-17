@@ -37,15 +37,19 @@ export interface LocalPrompt {
 export interface LocalPromptImage {
   id?:            number
   localId:        string
+  remoteId?:      string
   promptLocalId:  string
-  originalBlob?:  Blob            // raw upload, local only
+  originalBlob?:  Blob            // raw upload, local only; never uploaded or overwritten by sync
   optimizedBlob?: Blob            // 720p WebP 85%, local cache
   remoteUrl?:     string          // base64 data URL stored in Neon after sync
   sha256?:        string          // hash of optimized for deduplication
   mimeType:       string
   width?:         number
   height?:        number
+  syncStatus:     SyncStatus
   createdAt:      Date
+  updatedAt:      Date
+  deletedAt?:     Date
 }
 
 // ─── Collection ──────────────────────────────────────────────────────────

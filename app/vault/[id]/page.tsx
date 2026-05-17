@@ -35,6 +35,7 @@ import { useMotionFeedback } from '@/components/ui/MotionProvider'
 import { ImageUploader } from '@/components/images/ImageUploader'
 import { ModelPill } from '@/components/models/ModelPill'
 import { ModelTargetSelector } from '@/components/models/ModelTargetSelector'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 import { authClient } from '@/lib/authClient'
 import { useNetwork } from '@/lib/hooks/useNetwork'
 import { normalizeModelValue } from '@/lib/models/modelTargets'
@@ -724,7 +725,12 @@ export default function PromptDetailPage() {
   const promptTypeLabel = useMemo(() => prompt?.type.replace('_', ' ') ?? '', [prompt?.type])
 
   if (!prompt) {
-    return <div className="motion-skeleton h-40 w-full max-w-4xl rounded-(--radius-card)" aria-label="Cargando prompt" />
+    return (
+      <div className="motion-panel flex min-h-40 w-full max-w-4xl items-center gap-12 rounded-(--radius-card) border border-muted-ash bg-steel-gray p-16" aria-label="Cargando prompt">
+        <MascotAnimation variant="loading" size="md" crop="tight" />
+        <p className="font-terminal text-[13px] text-dim-gray">Cargando prompt...</p>
+      </div>
+    )
   }
 
   if (zenMode) {
@@ -1213,6 +1219,7 @@ function MagicLoadingPanel({ title }: { title: string }) {
   return (
     <div className="grid min-h-72 place-items-center rounded-(--radius-card) border border-muted-ash bg-midnight-oil p-20 text-center" role="status" aria-live="polite">
       <div className="w-full max-w-md">
+        <MascotAnimation variant="loading" size="lg" crop="tight" className="mx-auto mb-10" />
         <p className="mb-8 font-terminal text-[11px] uppercase tracking-widest text-dim-gray">Edición en curso</p>
         <h3 className="text-[18px] font-bold uppercase tracking-widest text-ghost-white">{title}</h3>
         <div className="mx-auto my-20 h-1 w-48 overflow-hidden rounded-full bg-muted-ash">
@@ -1601,6 +1608,7 @@ function AiWorkOverlay({ work }: { work: AiWork | null }) {
   return (
     <div className="fixed inset-0 z-95 grid place-items-center bg-midnight-oil/55 px-16 backdrop-blur-sm" role="status" aria-live="polite">
       <div className="motion-modal-panel w-full max-w-lg rounded-(--radius-card) border border-muted-ash bg-steel-gray p-20 text-center">
+        <MascotAnimation variant="loading" size="lg" crop="tight" className="mx-auto mb-10" />
         <p className="mb-8 font-terminal text-[12px] uppercase tracking-widest text-dim-gray">Promptier AI</p>
         <h2 className="text-[18px] font-bold uppercase tracking-widest text-ghost-white">{work.title}</h2>
         <div className="mx-auto my-20 h-1 w-48 overflow-hidden rounded-full bg-muted-ash">

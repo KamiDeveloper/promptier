@@ -8,6 +8,7 @@
 --   006_templates.sql
 --   007_public_prompt_cover.sql
 --   008_user_ai_keys.sql
+--   009_prompt_images_sync.sql
 --
 -- Neon Auth schema (neon_auth.users) is managed by the Neon Auth service.
 -- These migrations only create app-level tables.

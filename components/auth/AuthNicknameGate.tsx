@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/authClient'
 import { getGetStartedPath } from '@/lib/auth/redirect'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 type ProfileData = { nickname: string } | null
 
@@ -40,7 +41,8 @@ export function AuthNicknameGate({ children }: Props) {
   if (!userId || profile === null) return null
   if (profile === undefined) {
     return (
-      <div className="flex min-h-[50dvh] items-center justify-center">
+      <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-12">
+        <MascotAnimation variant="loading" size="md" crop="tight" />
         <p className="font-terminal text-[13px] text-dim-gray">verificando NickName...</p>
       </div>
     )

@@ -181,6 +181,95 @@ class PromptierDB extends Dexie {
         '&key',
       ].join(', '),
     })
+
+    this.version(3).stores({
+      prompts: [
+        '++id',
+        '&localId',
+        'remoteId',
+        'collectionId',
+        'syncStatus',
+        'isFavorite',
+        'type',
+        'model',
+        'orderIndex',
+        '*tags',
+        'updatedAt',
+        'deletedAt',
+        'lastCopiedAt',
+      ].join(', '),
+
+      promptImages: [
+        '++id',
+        '&localId',
+        'remoteId',
+        'promptLocalId',
+        'sha256',
+        'syncStatus',
+        'updatedAt',
+        'createdAt',
+        'deletedAt',
+      ].join(', '),
+
+      collections: [
+        '++id',
+        '&localId',
+        'remoteId',
+        'name',
+        'parentId',
+        'syncStatus',
+      ].join(', '),
+
+      templates: [
+        '++id',
+        '&localId',
+        'remoteId',
+        'name',
+        'syncStatus',
+        '*tags',
+      ].join(', '),
+
+      promptVersions: [
+        '++id',
+        'promptLocalId',
+        'savedAt',
+      ].join(', '),
+
+      copyHistory: [
+        '++id',
+        'promptLocalId',
+        'copiedAt',
+      ].join(', '),
+
+      syncOutbox: [
+        '++id',
+        '&operationId',
+        'entityType',
+        'entityLocalId',
+        'status',
+        'createdAt',
+      ].join(', '),
+
+      publicPromptCache: [
+        '++id',
+        '&remoteId',
+        'cursorValue',
+        'cachedAt',
+        'publishedAt',
+      ].join(', '),
+
+      userSettings: [
+        '++id',
+        '&key',
+      ].join(', '),
+    }).upgrade((tx) => (
+      tx.table('promptImages').toCollection().modify((image) => {
+        const createdAt = image.createdAt instanceof Date ? image.createdAt : new Date(image.createdAt ?? Date.now())
+        image.syncStatus = image.syncStatus ?? 'local_only'
+        image.createdAt = createdAt
+        image.updatedAt = image.updatedAt instanceof Date ? image.updatedAt : createdAt
+      })
+    ))
   }
 }
 

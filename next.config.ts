@@ -1,7 +1,24 @@
 import type { NextConfig } from 'next'
 import withPWAInit, { runtimeCaching as defaultRuntimeCaching } from '@ducanh2912/next-pwa'
 
-const runtimeCaching = defaultRuntimeCaching.map((entry) => {
+const mascotRuntimeCaching = {
+  urlPattern: ({ sameOrigin, url }: { sameOrigin: boolean; url: URL }) => (
+    sameOrigin &&
+    url.pathname.startsWith('/animations/') &&
+    url.pathname.endsWith('.webm')
+  ),
+  handler: 'CacheFirst' as const,
+  options: {
+    cacheName: 'mascot-video-assets',
+    rangeRequests: true,
+    expiration: {
+      maxEntries: 8,
+      maxAgeSeconds: 365 * 24 * 60 * 60,
+    },
+  },
+}
+
+const runtimeCaching = [mascotRuntimeCaching, ...defaultRuntimeCaching.map((entry) => {
   if (entry.options?.cacheName !== 'apis') return entry
 
   return {
@@ -13,7 +30,7 @@ const runtimeCaching = defaultRuntimeCaching.map((entry) => {
       url.pathname !== '/api/profile'
     ),
   }
-})
+})]
 
 const withPWA = withPWAInit({
   dest: 'public',

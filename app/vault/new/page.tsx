@@ -7,7 +7,6 @@ import {
   Check,
   FileImage,
   Image as ImageIcon,
-  Loader2,
   ScanText,
   Sparkles,
   Trash2,
@@ -19,6 +18,7 @@ import { Card } from '@/components/ui/Card'
 import { ImageUploader } from '@/components/images/ImageUploader'
 import { ModelTargetSelector } from '@/components/models/ModelTargetSelector'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 import { createPrompt } from '@/lib/db/repositories/promptRepository'
 import { addPromptImage } from '@/lib/db/repositories/imageRepository'
 import { listCollections } from '@/lib/db/repositories/collectionRepository'
@@ -692,7 +692,7 @@ function CaptureLab({
       )}
 
       {aiBusy && (
-        <StatusPanel tone="default" icon={<Loader2 className="animate-spin" size={16} aria-hidden="true" />}>
+        <StatusPanel tone="default" icon={<MascotAnimation variant="loading" size="xs" crop="tight" />}>
           Leyendo la captura...
         </StatusPanel>
       )}

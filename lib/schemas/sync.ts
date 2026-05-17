@@ -24,6 +24,31 @@ export const SyncPushRequestSchema = z.object({
   operations: z.array(SyncPushItemSchema).max(100),
 })
 
+export const SyncImagePushItemSchema = z.discriminatedUnion('operation', [
+  z.object({
+    localId: z.string().min(1),
+    promptLocalId: z.string().min(1),
+    operation: z.literal('upsert'),
+    dataUrl: z.string().startsWith('data:image/').max(7_000_000),
+    sha256: z.string().min(16).max(128).optional(),
+    mimeType: z.string().min(1).max(80),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+  }).strict(),
+  z.object({
+    localId: z.string().min(1),
+    promptLocalId: z.string().min(1),
+    operation: z.literal('delete'),
+    updatedAt: z.string().optional(),
+  }).strict(),
+])
+
+export const SyncImagePushRequestSchema = z.object({
+  images: z.array(SyncImagePushItemSchema).min(1).max(10),
+})
+
 export const SyncPullRequestSchema = z.object({
   cursor: z.string().optional(), // ISO timestamp or null for full pull
 })
@@ -45,6 +70,7 @@ export const SyncPushResponseSchema = z.object({
 export type SyncPushRequest  = z.infer<typeof SyncPushRequestSchema>
 export type SyncPushResponse = z.infer<typeof SyncPushResponseSchema>
 export type SyncPullRequest  = z.infer<typeof SyncPullRequestSchema>
+export type SyncImagePushRequest = z.infer<typeof SyncImagePushRequestSchema>
 
 // ─── Public feed schemas ───────────────────────────────────────────────────
 

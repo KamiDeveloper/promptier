@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { MotionProvider } from '@/components/ui/MotionProvider'
+import { MascotPreloader } from '@/components/mascot/MascotAnimation'
 
 function getSiteUrl() {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -99,6 +100,7 @@ export default function RootLayout({
         <MotionProvider>
           <AuthProvider>
             {children}
+            <MascotPreloader />
           </AuthProvider>
         </MotionProvider>
       </body>

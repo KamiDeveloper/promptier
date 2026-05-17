@@ -9,6 +9,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 type ToastTone = 'default' | 'success' | 'warning' | 'danger'
 
@@ -98,6 +99,14 @@ export function MotionProvider({ children }: { children: ReactNode }) {
             role={toast.tone === 'danger' ? 'alert' : 'status'}
           >
             <div className="flex items-start justify-between gap-16">
+              {toast.tone === 'success' && (
+                <MascotAnimation
+                  variant="celebration"
+                  size="xs"
+                  crop="tight"
+                  className="-ml-4 -mt-5"
+                />
+              )}
               <div className="min-w-0">
                 <p className="text-[13px] font-bold uppercase tracking-widest">{toast.title}</p>
                 {toast.message && (

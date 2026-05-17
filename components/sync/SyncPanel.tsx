@@ -8,6 +8,7 @@ import type { SyncResult } from '@/lib/services/syncService'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 export function SyncPanel() {
   const { data: session } = authClient.useSession()
@@ -37,7 +38,7 @@ export function SyncPanel() {
       setPendingCount(count)
       feedback.notify({
         title: res.errors.length > 0 ? 'Sync con errores' : 'Sync completada',
-        message: `${res.pushed} enviadas / ${res.pulled} recibidas / ${res.conflicts} conflictos`,
+        message: `${res.pushed + res.imagesPushed} enviadas / ${res.pulled + res.imagesPulled} recibidas / ${res.imagesPushed + res.imagesPulled} imagenes / ${res.conflicts} conflictos`,
         tone: res.errors.length > 0 ? 'warning' : 'success',
       })
     } finally {
@@ -67,6 +68,13 @@ export function SyncPanel() {
         {online ? 'Sincronizar ahora' : 'Sin conexion'}
       </Button>
 
+      {syncing && (
+        <div className="flex items-center gap-8 rounded-(--radius-card) border border-muted-ash bg-midnight-oil p-8 text-[12px] text-dim-gray" role="status">
+          <MascotAnimation variant="loading" size="xs" crop="tight" />
+          Sincronizando cambios locales...
+        </div>
+      )}
+
       {result && (
         <div className="motion-panel space-y-1 font-terminal text-xs">
           {result.pushed > 0 && (
@@ -74,9 +82,24 @@ export function SyncPanel() {
               subida: <span className="tabular-nums">{result.pushed}</span>
             </p>
           )}
+          {result.imagesPushed > 0 && (
+            <p className="text-ghost-white">
+              imagenes subidas: <span className="tabular-nums">{result.imagesPushed}</span>
+            </p>
+          )}
           {result.pulled > 0 && (
             <p className="text-ghost-white">
               bajada: <span className="tabular-nums">{result.pulled}</span>
+            </p>
+          )}
+          {result.imagesPulled > 0 && (
+            <p className="text-ghost-white">
+              imagenes bajadas: <span className="tabular-nums">{result.imagesPulled}</span>
+            </p>
+          )}
+          {result.imagesDeleted > 0 && (
+            <p className="text-dim-gray">
+              imagenes borradas: <span className="tabular-nums">{result.imagesDeleted}</span>
             </p>
           )}
           {result.conflicts > 0 && (
@@ -89,7 +112,7 @@ export function SyncPanel() {
               errores: <span className="tabular-nums">{result.errors.length}</span> {result.errors[0]}
             </p>
           )}
-          {result.pushed === 0 && result.pulled === 0 && result.errors.length === 0 && (
+          {result.pushed === 0 && result.pulled === 0 && result.imagesPushed === 0 && result.imagesPulled === 0 && result.imagesDeleted === 0 && result.errors.length === 0 && (
             <p className="text-dim-gray">Todo al dia</p>
           )}
         </div>

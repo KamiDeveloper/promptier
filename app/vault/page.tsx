@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Copy, Image as ImageIcon, Star } from 'lucide-react'
+import { Cloud, Copy, Image as ImageIcon, Star } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { ModelPill } from '@/components/models/ModelPill'
 import { useAppModal } from '@/components/ui/Modal'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 import { useNetwork } from '@/lib/hooks/useNetwork'
 import {
   listPrompts,
@@ -20,6 +21,7 @@ import {
 } from '@/lib/db/repositories/promptRepository'
 import { createCollection, listCollections } from '@/lib/db/repositories/collectionRepository'
 import { listPromptImages } from '@/lib/db/repositories/imageRepository'
+import { syncVault, type SyncResult } from '@/lib/services/syncService'
 import type { LocalCollection, LocalPrompt } from '@/lib/db/schema'
 
 export default function VaultPage() {
@@ -34,6 +36,7 @@ export default function VaultPage() {
   const [collections, setCollections] = useState<LocalCollection[]>([])
   const [collectionId, setCollectionId] = useState<string>('')
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [cloudSyncing, setCloudSyncing] = useState(false)
   const initialLoadRef = useRef(true)
   const loadRequestRef = useRef(0)
 
@@ -111,6 +114,32 @@ export default function VaultPage() {
     await load({ showLoading: false })
   }
 
+  async function handleCloudSync() {
+    if (offline) {
+      feedback.notify({ title: 'Sin conexion', message: 'La sincronizacion con la nube necesita red.', tone: 'warning' })
+      return
+    }
+
+    setCloudSyncing(true)
+    try {
+      const result = await syncVault()
+      await load({ showLoading: false })
+      feedback.notify({
+        title: result.errors.length > 0 ? 'Sync con avisos' : 'Sync completada',
+        message: formatSyncSummary(result),
+        tone: result.errors.length > 0 ? 'warning' : 'success',
+      })
+    } catch (err) {
+      feedback.notify({
+        title: 'No se pudo sincronizar',
+        message: err instanceof Error ? err.message : 'Intentalo de nuevo en unos segundos.',
+        tone: 'warning',
+      })
+    } finally {
+      setCloudSyncing(false)
+    }
+  }
+
   async function handleDrop(targetLocalId: string) {
     if (!draggingId || draggingId === targetLocalId) return
     const next = [...prompts]
@@ -134,9 +163,23 @@ export default function VaultPage() {
           <h1 className="text-[20px] font-bold uppercase tracking-widest text-ghost-white">
             Vault
           </h1>
-          <Link href="/vault/new">
-            <Button variant="primary" size="sm">+ Nuevo prompt</Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-8">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCloudSync}
+              loading={cloudSyncing}
+              disabled={offline || cloudSyncing}
+              title={offline ? 'Sin conexion' : 'Sincronizar con la nube'}
+            >
+              <Cloud size={16} aria-hidden="true" />
+              <span className="hidden sm:inline">Sincronizar con la nube</span>
+              <span className="sm:hidden">Sync nube</span>
+            </Button>
+            <Link href="/vault/new">
+              <Button variant="primary" size="sm">+ Nuevo prompt</Button>
+            </Link>
+          </div>
         </div>
 
         <Input
@@ -216,6 +259,22 @@ export default function VaultPage() {
       )}
     </section>
   )
+}
+
+function formatSyncSummary(result: SyncResult): string {
+  const sent = result.pushed + result.imagesPushed
+  const received = result.pulled + result.imagesPulled
+  const parts = [
+    `${sent} enviadas`,
+    `${received} recibidas`,
+    `${result.imagesPushed + result.imagesPulled} imagenes`,
+  ]
+
+  if (result.imagesDeleted > 0) parts.push(`${result.imagesDeleted} borradas`)
+  if (result.conflicts > 0) parts.push(`${result.conflicts} conflictos`)
+  if (result.errors.length > 0) parts.push(`${result.errors.length} errores`)
+
+  return parts.join(' / ')
 }
 
 function PromptCard({
@@ -393,7 +452,7 @@ function IconActionButton({
 function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   return (
     <div className="motion-panel flex flex-col items-center gap-16 py-32 text-center font-terminal text-dim-gray">
-      <span className="motion-loading-dots text-[40px]" aria-hidden="true">□</span>
+      <MascotAnimation variant="greeting" size="lg" crop="tight" />
       <p className="text-[14px]">
         {hasQuery ? 'Sin resultados para esa busqueda.' : 'Tu vault esta vacio.'}
       </p>

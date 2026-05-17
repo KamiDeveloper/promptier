@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, Loader2 } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/app/assets/logo'
 import { authClient } from '@/lib/authClient'
@@ -10,6 +10,7 @@ import { getGetStartedPath } from '@/lib/auth/redirect'
 import { AppModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 const NICKNAME_RE = /^[a-zA-Z0-9_-]{3,32}$/
 
@@ -179,7 +180,10 @@ export function GetStartedClient({ nextPath }: GetStartedClientProps) {
           <aside className="motion-panel rounded-(--radius-card) border border-muted-ash bg-steel-gray p-16 sm:p-26">
             <div className="space-y-32">
               <div className="space-y-8">
-                <Logo variant="isotype" className="h-14 w-auto text-ghost-white" decorative />
+                <div className="flex items-start justify-between gap-12">
+                  <Logo variant="isotype" className="h-14 w-auto text-ghost-white" decorative />
+                  <MascotAnimation variant="greeting" size="md" crop="tight" />
+                </div>
                 <h2 className="text-[18px] font-bold uppercase tracking-widest text-ghost-white">
                   Get started
                 </h2>
@@ -317,7 +321,7 @@ function StatusRow({ label }: { label: string }) {
   return (
     <div className="flex min-h-12 items-center justify-between rounded-(--radius-button) border border-muted-ash bg-midnight-oil px-12 text-[12px] uppercase tracking-widest text-dim-gray">
       <span>{label}</span>
-      <Loader2 size={15} aria-hidden="true" className="animate-spin" />
+      <MascotAnimation variant="loading" size="xs" crop="tight" />
     </div>
   )
 }

@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/Input'
 import { useAppModal } from '@/components/ui/Modal'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
 import { ModelPill } from '@/components/models/ModelPill'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 import {
   deletePromptImage,
   getBestImageUrl,
@@ -891,6 +892,9 @@ function IconAction({
 function GallerySkeleton() {
   return (
     <div className="flex flex-1 items-center gap-16 overflow-hidden rounded-(--radius-card) border border-muted-ash bg-midnight-oil p-16">
+      <div className="grid min-w-28 place-items-center">
+        <MascotAnimation variant="loading" size="lg" crop="tight" />
+      </div>
       {[0.68, 1.2, 0.82, 1.55].map((ratio, index) => (
         <div
           key={`${ratio}-${index}`}
@@ -909,6 +913,7 @@ function GallerySkeleton() {
 function EmptyGallery({ hasQuery }: { hasQuery: boolean }) {
   return (
     <Card className="motion-panel flex flex-1 flex-col items-center justify-center gap-16 py-32 text-center">
+      <MascotAnimation variant="greeting" size="lg" crop="tight" />
       <div className="grid h-16 w-16 place-items-center rounded-(--radius-button) border border-muted-ash text-dim-gray">
         {hasQuery ? <RotateCcw size={28} aria-hidden="true" /> : <ImageIcon size={28} aria-hidden="true" />}
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 export function OfflineBadge() {
   const [online, setOnline] = useState(true)
@@ -22,6 +23,7 @@ export function OfflineBadge() {
 
   return (
     <Badge variant="offline" aria-live="polite" aria-label="Sin conexion a internet">
+      <MascotAnimation variant="flexing" size="xs" crop="tight" />
       <span aria-hidden="true">o</span> offline
     </Badge>
   )

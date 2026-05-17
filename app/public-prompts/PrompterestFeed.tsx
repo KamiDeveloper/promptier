@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { useAppModal } from '@/components/ui/Modal'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
 import { ModelPill } from '@/components/models/ModelPill'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 type Props = {
   initialFeed: PublicFeedResponse
@@ -264,7 +265,8 @@ export function PrompterestFeed({ initialFeed }: Props) {
       </div>
 
       {filteredPrompts.length === 0 ? (
-        <Card>
+        <Card className="flex flex-col items-center gap-12 text-center">
+          <MascotAnimation variant="greeting" size="lg" crop="tight" />
           <p className="text-[13px] text-dim-gray">
             {query ? 'No hay resultados para esa busqueda.' : 'Aun no hay prompts publicos.'}
           </p>

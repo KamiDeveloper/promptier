@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { useAppModal } from '@/components/ui/Modal'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 type ThinkingLevel = 'MINIMAL' | 'LOW' | 'MEDIUM' | 'HIGH'
 
@@ -157,7 +158,13 @@ export function UserSettingsClient() {
   if (loading) {
     return (
       <div className="grid gap-16">
-        <div className="motion-skeleton h-32 rounded-(--radius-card)" />
+        <div className="motion-panel flex items-center gap-12 rounded-(--radius-card) border border-muted-ash bg-steel-gray p-16">
+          <MascotAnimation variant="loading" size="md" crop="tight" />
+          <div className="min-w-0">
+            <p className="font-terminal text-[11px] uppercase tracking-widest text-dim-gray">Cuenta</p>
+            <p className="mt-4 text-[13px] text-dim-gray">Cargando configuracion...</p>
+          </div>
+        </div>
         <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="motion-skeleton h-96 rounded-(--radius-card)" />
           <div className="motion-skeleton h-96 rounded-(--radius-card)" />
@@ -204,7 +211,11 @@ export function UserSettingsClient() {
                   {usingByok ? 'Usando tu API key Gemini' : 'Usando key compartida'}
                 </h2>
               </div>
-              <Shield size={22} aria-hidden="true" className="text-ghost-white" />
+              {usingByok ? (
+                <MascotAnimation variant="flexing" size="md" crop="tight" />
+              ) : (
+                <Shield size={22} aria-hidden="true" className="text-ghost-white" />
+              )}
             </div>
 
             {!usingByok && settings && (

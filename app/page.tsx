@@ -8,6 +8,7 @@ import { authClient } from '@/lib/authClient'
 import { getGetStartedPath } from '@/lib/auth/redirect'
 import { Logo } from '@/app/assets/logo'
 import { Button } from '@/components/ui/Button'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 const promptLines = [
   '# EDITORIAL POSTER PROMPT',
@@ -94,9 +95,12 @@ export default function RootPage() {
         <div className="grid flex-1 gap-10 py-10 lg:gap-12 lg:py-14 xl:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] xl:gap-16 xl:py-16 min-[1700px]:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
           <section className="grid min-w-0 gap-10 lg:gap-12 xl:grid-rows-[1fr_auto] xl:gap-16">
             <div className="motion-panel flex min-h-90 min-w-0 flex-col justify-between gap-18 rounded-(--radius-card) border border-muted-ash bg-steel-gray p-[24px] sm:min-h-105 sm:p-12 lg:p-[64px] xl:p-18 min-[1700px]">
-              <div>
+              <div className="flex items-start justify-between gap-16">
+                <div>
                 <p className="mb-3 text-[11px] uppercase tracking-widest text-dim-gray sm:text-[12px]">099-grade prompt workspace</p>
                 <Logo variant="logotype" className="h-12 w-auto md:mt-20 text-ghost-white" />
+                </div>
+                <MascotAnimation variant="greeting" size="lg" crop="tight" className="hidden sm:inline-grid" />
               </div>
 
               <div className="max-w-xl">

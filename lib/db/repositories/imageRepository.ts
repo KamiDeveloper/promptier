@@ -7,6 +7,7 @@ import { sha256 } from '@/lib/utils/hash'
 export async function addPromptImage(promptLocalId: string, file: File): Promise<LocalPromptImage> {
   const db = getDb()
   const optimized = await optimizeImage(file)
+  const now = new Date()
   const image: LocalPromptImage = {
     localId: generateId(),
     promptLocalId,
@@ -17,7 +18,9 @@ export async function addPromptImage(promptLocalId: string, file: File): Promise
     mimeType: optimized.mimeType,
     width: optimized.width,
     height: optimized.height,
-    createdAt: new Date(),
+    syncStatus: 'local_only',
+    createdAt: now,
+    updatedAt: now,
   }
   const id = await db.promptImages.add(image)
   return { ...image, id: id as number }
@@ -35,6 +38,7 @@ export async function addOptimizedPromptImageFromDataUrl(
   const blob = await dataUrlToBlob(dataUrl)
   const dimensions = await getImageDimensions(blob)
   const arrayBuffer = await blob.arrayBuffer()
+  const now = new Date()
 
   const image: LocalPromptImage = {
     localId: generateId(),
@@ -45,7 +49,9 @@ export async function addOptimizedPromptImageFromDataUrl(
     mimeType: blob.type || parseDataUrlMimeType(dataUrl) || 'image/webp',
     width: dimensions?.width,
     height: dimensions?.height,
-    createdAt: new Date(),
+    syncStatus: 'local_only',
+    createdAt: now,
+    updatedAt: now,
   }
 
   const id = await db.promptImages.add(image)
@@ -54,16 +60,33 @@ export async function addOptimizedPromptImageFromDataUrl(
 
 export async function listPromptImages(promptLocalId: string): Promise<LocalPromptImage[]> {
   const db = getDb()
-  return db.promptImages.where('promptLocalId').equals(promptLocalId).toArray()
+  const images = await db.promptImages.where('promptLocalId').equals(promptLocalId).toArray()
+  return images
+    .filter((image) => !image.deletedAt)
+    .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
 }
 
 export async function listAllPromptImages(): Promise<LocalPromptImage[]> {
   const db = getDb()
-  return db.promptImages.orderBy('createdAt').reverse().toArray()
+  const images = await db.promptImages.orderBy('createdAt').reverse().toArray()
+  return images.filter((image) => !image.deletedAt)
 }
 
 export async function deletePromptImage(localId: string): Promise<void> {
   const db = getDb()
+  const existing = await db.promptImages.where('localId').equals(localId).first()
+  if (!existing) return
+
+  if (existing.remoteId || existing.syncStatus === 'synced' || existing.syncStatus === 'pending_upload') {
+    const now = new Date()
+    await db.promptImages.where('localId').equals(localId).modify({
+      deletedAt: now,
+      updatedAt: now,
+      syncStatus: 'pending_delete',
+    })
+    return
+  }
+
   await db.promptImages.where('localId').equals(localId).delete()
 }
 
@@ -75,6 +98,7 @@ export async function updatePromptImageDimensions(
   await db.promptImages.where('localId').equals(localId).modify({
     width: dimensions.width,
     height: dimensions.height,
+    updatedAt: new Date(),
   })
 }
 

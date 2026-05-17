@@ -15,6 +15,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { MascotAnimation } from '@/components/mascot/MascotAnimation'
 
 type ChecklistItem = {
   id: string
@@ -264,6 +265,9 @@ export function GuideClient() {
         </div>
 
         <div className="rounded-(--radius-card) border border-muted-ash bg-steel-gray p-16">
+          <div className="mb-8 flex justify-end">
+            <MascotAnimation variant="flexing" size="md" crop="tight" />
+          </div>
           <div className="mb-10 flex items-center justify-between gap-8">
             <p className="font-terminal text-[11px] uppercase tracking-widest text-dim-gray">Progreso</p>
             <span className="tabular-nums text-[18px] font-bold text-ghost-white">{progressPercent}%</span>

@@ -43,7 +43,7 @@ export function UserNav({ variant = 'inline', className = '', onNavigate }: User
     if (variant === 'mobile-menu') {
       return (
         <Link
-          href="/auth/signin"
+          href="/getstarted"
           onClick={onNavigate}
           className={[
             'motion-press flex min-h-12 items-center justify-between rounded-(--radius-button) border border-muted-ash px-16 text-[13px] uppercase tracking-widest text-ghost-white hover:border-ghost-white hover:bg-steel-gray',
@@ -58,7 +58,7 @@ export function UserNav({ variant = 'inline', className = '', onNavigate }: User
     }
 
     return (
-      <Link href="/auth/signin" className={className}>
+      <Link href="/getstarted" className={className}>
         <Button variant="ghost" size="sm">
           Entrar
         </Button>

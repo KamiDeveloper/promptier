@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/authClient'
+import { getGetStartedPath } from '@/lib/auth/redirect'
 
 type Props = {
   children: React.ReactNode
@@ -12,12 +13,13 @@ export function RequireAuthGate({ children }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const { data: session, isPending } = authClient.useSession()
+  const userId = session?.user?.id
 
   useEffect(() => {
-    if (!isPending && !session?.user) {
-      router.replace(`/?next=${encodeURIComponent(pathname)}`)
+    if (!isPending && !userId) {
+      router.replace(getGetStartedPath(pathname))
     }
-  }, [isPending, pathname, router, session?.user])
+  }, [isPending, pathname, router, userId])
 
   if (isPending) {
     return (
@@ -27,7 +29,7 @@ export function RequireAuthGate({ children }: Props) {
     )
   }
 
-  if (!session?.user) return null
+  if (!userId) return null
 
   return <>{children}</>
 }

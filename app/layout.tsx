@@ -3,7 +3,17 @@ import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { MotionProvider } from '@/components/ui/MotionProvider'
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+function getSiteUrl() {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.startsWith('http')
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : `https://${process.env.NEXT_PUBLIC_APP_URL}`
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return 'http://localhost:3000'
+}
+
+const siteUrl = getSiteUrl()
 const defaultDescription = 'Vault offline-first para crear, organizar, mejorar y compartir prompts de imagen.'
 const ogImage = {
   url: '/og-image.webp',

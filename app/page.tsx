@@ -1,8 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Bookmark, Images, Sparkles, WifiOff } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/authClient'
+import { getGetStartedPath } from '@/lib/auth/redirect'
 import { Logo } from '@/app/assets/logo'
 import { Button } from '@/components/ui/Button'
 
@@ -22,16 +25,58 @@ const featureTiles = [
   { label: 'Offline', icon: WifiOff, text: 'Trabajo local-first aunque la red falle.' },
 ]
 
-export default function RootPage() {
-  const { data: session, isPending } = authClient.useSession()
+type ProfileData = { nickname: string } | null
 
-  const handleSignIn = async () => {
-    const next = new URLSearchParams(window.location.search).get('next') || '/vault'
-    await authClient.signIn.social({
-      provider: 'google',
-      callbackURL: next,
-    })
-  }
+export default function RootPage() {
+  const router = useRouter()
+  const { data: session, isPending } = authClient.useSession()
+  const [profile, setProfile] = useState<ProfileData | undefined>(undefined)
+  const [profileCheckFailed, setProfileCheckFailed] = useState(false)
+  const userId = session?.user?.id
+
+  useEffect(() => {
+    if (isPending) return
+
+    if (!userId) {
+      setProfile(null)
+      setProfileCheckFailed(false)
+      return
+    }
+
+    let cancelled = false
+    setProfile(undefined)
+    setProfileCheckFailed(false)
+
+    fetch('/api/profile', { cache: 'no-store' })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`profile:${res.status}`)
+        }
+        return res.json() as Promise<ProfileData>
+      })
+      .then((data) => {
+        if (cancelled) return
+
+        if (data?.nickname) {
+          setProfile(data)
+          return
+        }
+
+        setProfile(null)
+        router.replace(getGetStartedPath('/vault'))
+      })
+      .catch(() => {
+        if (cancelled) return
+        setProfile(null)
+        setProfileCheckFailed(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isPending, router, userId])
+
+  const isCheckingAccess = isPending || (!!userId && profile === undefined && !profileCheckFailed)
 
   return (
     <main className="motion-page min-h-dvh bg-midnight-oil text-ghost-white">
@@ -71,20 +116,29 @@ export default function RootPage() {
                   <ArrowRight size={16} aria-hidden="true" />
                 </Button>
               </Link>
-              {isPending ? (
+              {isCheckingAccess ? (
                 <div className="motion-skeleton h-14 rounded-(--radius-button)" aria-label="verificando sesion" />
-              ) : session?.user ? (
+              ) : userId && profile?.nickname ? (
                 <Link href="/vault">
                   <Button variant="primary" className="min-h-14 w-full justify-between">
                     Entrar al vault
                     <ArrowRight size={16} aria-hidden="true" />
                   </Button>
                 </Link>
+              ) : userId ? (
+                <Link href={getGetStartedPath('/vault')}>
+                  <Button variant="primary" className="min-h-14 w-full justify-between">
+                    Completar NickName
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </Button>
+                </Link>
               ) : (
-                <Button variant="primary" className="min-h-14 w-full justify-between" onClick={handleSignIn}>
-                  Continuar con Google
-                  <ArrowRight size={16} aria-hidden="true" />
-                </Button>
+                <Link href="/getstarted">
+                  <Button variant="primary" className="min-h-14 w-full justify-between">
+                    Continuar con Google
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </Button>
+                </Link>
               )}
             </div>
           </section>

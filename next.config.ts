@@ -1,5 +1,19 @@
 import type { NextConfig } from 'next'
-import withPWAInit from '@ducanh2912/next-pwa'
+import withPWAInit, { runtimeCaching as defaultRuntimeCaching } from '@ducanh2912/next-pwa'
+
+const runtimeCaching = defaultRuntimeCaching.map((entry) => {
+  if (entry.options?.cacheName !== 'apis') return entry
+
+  return {
+    ...entry,
+    urlPattern: ({ sameOrigin, url }: { sameOrigin: boolean; url: URL }) => (
+      sameOrigin &&
+      url.pathname.startsWith('/api/') &&
+      !url.pathname.startsWith('/api/auth/') &&
+      url.pathname !== '/api/profile'
+    ),
+  }
+})
 
 const withPWA = withPWAInit({
   dest: 'public',
@@ -7,9 +21,12 @@ const withPWA = withPWAInit({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === 'development',
+  fallbacks: {
+    document: '/offline',
+  },
   workboxOptions: {
     disableDevLogs: true,
-    navigateFallback: '/offline',
+    runtimeCaching,
   },
 })
 

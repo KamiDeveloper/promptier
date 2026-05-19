@@ -193,12 +193,27 @@ async function pushOutboxOperations(result: SyncResult): Promise<void> {
 }
 
 async function pullVaultEntities(result: SyncResult): Promise<void> {
-  let cursor = await getLastCursor()
+  let promptsCursor = await getLastCursor('sync_prompts_cursor')
+  let collectionsCursor = await getLastCursor('sync_collections_cursor')
+  let templatesCursor = await getLastCursor('sync_templates_cursor')
+
+  // Fallback for legacy single cursor if it exists
+  const legacyCursor = await getLastCursor(VAULT_SYNC_CURSOR_KEY)
+  if (legacyCursor) {
+    if (!promptsCursor) promptsCursor = legacyCursor
+    if (!collectionsCursor) collectionsCursor = legacyCursor
+    if (!templatesCursor) templatesCursor = legacyCursor
+    const db = getDb()
+    await db.userSettings.where('key').equals(VAULT_SYNC_CURSOR_KEY).delete()
+  }
+
   let hasMore = true
 
   while (hasMore) {
     const params = new URLSearchParams({ limit: '50' })
-    if (cursor) params.set('cursor', cursor)
+    if (promptsCursor) params.set('prompts_cursor', promptsCursor)
+    if (collectionsCursor) params.set('collections_cursor', collectionsCursor)
+    if (templatesCursor) params.set('templates_cursor', templatesCursor)
 
     const res = await fetch(`/api/sync/pull?${params.toString()}`, { cache: 'no-store' })
     if (!res.ok) {
@@ -210,7 +225,11 @@ async function pullVaultEntities(result: SyncResult): Promise<void> {
       prompts: LocalPrompt[]
       collections: LocalCollection[]
       templates: LocalTemplate[]
-      nextCursor: string
+      nextCursors: {
+        prompts: string
+        collections: string
+        templates: string
+      }
       hasMore: boolean
     }
 
@@ -264,15 +283,25 @@ async function pullVaultEntities(result: SyncResult): Promise<void> {
       }
     }
 
-    await saveCursor(data.nextCursor)
+    await saveCursor(data.nextCursors.prompts, 'sync_prompts_cursor')
+    await saveCursor(data.nextCursors.collections, 'sync_collections_cursor')
+    await saveCursor(data.nextCursors.templates, 'sync_templates_cursor')
+
     hasMore = data.hasMore
 
-    if (hasMore && data.nextCursor === cursor) {
-      result.errors.push('Pull detenido: el cursor remoto no avanzo.')
+    if (
+      hasMore &&
+      data.nextCursors.prompts === promptsCursor &&
+      data.nextCursors.collections === collectionsCursor &&
+      data.nextCursors.templates === templatesCursor
+    ) {
+      result.errors.push('Pull detenido: los cursores remotos no avanzaron.')
       break
     }
 
-    cursor = data.nextCursor
+    promptsCursor = data.nextCursors.prompts
+    collectionsCursor = data.nextCursors.collections
+    templatesCursor = data.nextCursors.templates
   }
 }
 
@@ -440,8 +469,11 @@ async function pullPromptImages(result: SyncResult): Promise<void> {
 
         const prompt = await db.prompts.where('localId').equals(remote.promptLocalId).first()
         if (!prompt || prompt.deletedAt) {
-          canAdvanceCursor = false
-          result.errors.push(`Pull image ${remote.localId}: prompt local no encontrado.`)
+          // If prompt is deleted or not found locally, we clean up the local image copy if it exists and skip
+          if (local) {
+            await removeLocalImage(local)
+            result.imagesDeleted++
+          }
           continue
         }
 

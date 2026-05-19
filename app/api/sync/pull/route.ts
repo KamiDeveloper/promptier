@@ -10,13 +10,19 @@ export async function GET(req: NextRequest) {
   if (errRes) return errRes
 
   const { searchParams } = req.nextUrl
-  const cursor = searchParams.get('cursor')    // ISO timestamp
+  const legacyCursor = searchParams.get('cursor')    // Fallback legacy cursor
+  const promptsCursor = searchParams.get('prompts_cursor') ?? legacyCursor
+  const collectionsCursor = searchParams.get('collections_cursor') ?? legacyCursor
+  const templatesCursor = searchParams.get('templates_cursor') ?? legacyCursor
+
   const limitRaw = parseInt(searchParams.get('limit') ?? '50', 10)
   const limit = Math.min(Math.max(1, limitRaw), 100)
 
-  const cursorTs = cursor ? new Date(cursor) : new Date(0)
+  const pCursorTs = promptsCursor ? new Date(promptsCursor) : new Date(0)
+  const cCursorTs = collectionsCursor ? new Date(collectionsCursor) : new Date(0)
+  const tCursorTs = templatesCursor ? new Date(templatesCursor) : new Date(0)
 
-  // Fetch prompts updated after cursor
+  // Fetch prompts updated after promptsCursor
   const prompts = await sql`
     SELECT
       id, local_id, title, description, content, content_type, type, model,
@@ -24,17 +30,17 @@ export async function GET(req: NextRequest) {
       collection_id, created_at, updated_at, synced_at
     FROM prompts
     WHERE auth_user_id = ${userId}
-      AND updated_at > ${cursorTs.toISOString()}
+      AND updated_at > ${pCursorTs.toISOString()}
     ORDER BY updated_at ASC
     LIMIT ${limit}
   `
 
-  // Fetch collections updated after cursor
+  // Fetch collections updated after collectionsCursor
   const collections = await sql`
     SELECT id, local_id, name, parent_id, is_deleted, created_at, updated_at
     FROM collections
     WHERE auth_user_id = ${userId}
-      AND updated_at > ${cursorTs.toISOString()}
+      AND updated_at > ${cCursorTs.toISOString()}
     ORDER BY updated_at ASC
     LIMIT ${limit}
   `
@@ -43,21 +49,30 @@ export async function GET(req: NextRequest) {
     SELECT id, local_id, name, content, content_type, tags, is_deleted, created_at, updated_at
     FROM templates
     WHERE auth_user_id = ${userId}
-      AND updated_at > ${cursorTs.toISOString()}
+      AND updated_at > ${tCursorTs.toISOString()}
     ORDER BY updated_at ASC
     LIMIT ${limit}
   `
 
-  // New cursor = max updated_at across all returned rows
-  const allTs = [
-    ...prompts.map((r) => new Date(r.updated_at as string).getTime()),
-    ...collections.map((r) => new Date(r.updated_at as string).getTime()),
-    ...templates.map((r) => new Date(r.updated_at as string).getTime()),
-  ]
-  const newCursor =
-    allTs.length > 0
-      ? new Date(Math.max(...allTs)).toISOString()
-      : cursor ?? new Date(0).toISOString()
+  const nextPromptsCursor = prompts.length > 0
+    ? new Date(prompts[prompts.length - 1].updated_at as string).toISOString()
+    : promptsCursor ?? new Date(0).toISOString()
+
+  const nextCollectionsCursor = collections.length > 0
+    ? new Date(collections[collections.length - 1].updated_at as string).toISOString()
+    : collectionsCursor ?? new Date(0).toISOString()
+
+  const nextTemplatesCursor = templates.length > 0
+    ? new Date(templates[templates.length - 1].updated_at as string).toISOString()
+    : templatesCursor ?? new Date(0).toISOString()
+
+  const nextCursor = new Date(
+    Math.max(
+      new Date(nextPromptsCursor).getTime(),
+      new Date(nextCollectionsCursor).getTime(),
+      new Date(nextTemplatesCursor).getTime()
+    )
+  ).toISOString()
 
   return NextResponse.json({
     prompts: prompts.map((r) => ({
@@ -105,7 +120,12 @@ export async function GET(req: NextRequest) {
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       })),
-    nextCursor: newCursor,
+    nextCursor: nextCursor,
+    nextCursors: {
+      prompts: nextPromptsCursor,
+      collections: nextCollectionsCursor,
+      templates: nextTemplatesCursor,
+    },
     hasMore: prompts.length === limit || collections.length === limit || templates.length === limit,
   })
 }

@@ -31,7 +31,7 @@ import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
-import { useAppModal } from '@/components/ui/Modal'
+import { AppModal, useAppModal } from '@/components/ui/Modal'
 import { useMotionFeedback } from '@/components/ui/MotionProvider'
 import { ModelPill } from '@/components/models/ModelPill'
 import { MascotAnimation } from '@/components/mascot/MascotAnimation'
@@ -199,8 +199,8 @@ export default function GalleryPage() {
       const gamma = event.gamma ?? 0
       const beta = event.beta ?? 0
       setDeviceTilt({
-        x: clamp(gamma / 5, -5, 5),
-        y: clamp((beta - 45) / -8, -5, 5),
+        x: clamp((gamma / 5) * 2, -10, 10),
+        y: clamp(((beta - 45) / -8) * 2, -10, 10),
       })
     }
 
@@ -567,7 +567,6 @@ export default function GalleryPage() {
                       viewport={viewport}
                       onActivate={() => {
                         setActiveId(item.id)
-                        setPeekOpen(true)
                         itemRefs.current.get(item.id)?.scrollIntoView({
                           behavior: feedback.reducedMotion ? 'auto' : 'smooth',
                           block: 'nearest',
@@ -597,14 +596,63 @@ export default function GalleryPage() {
               </div>
 
               {activeItem && (
-                <ActivePromptPanel
-                  item={activeItem}
+                <AppModal
                   open={peekOpen}
-                  onToggleOpen={() => setPeekOpen((value) => !value)}
-                  onCopy={() => copyPrompt(activeItem)}
-                  onFavorite={() => toggleFavoriteForItem(activeItem)}
-                  onDelete={() => deleteImage(activeItem)}
-                />
+                  onOpenChange={setPeekOpen}
+                  title={activeItem.promptTitle}
+                  eyebrow="Prompt Peek"
+                  size="lg"
+                >
+                  <div className="grid gap-16 lg:grid-cols-[1fr_auto] lg:items-start text-[14px]">
+                    <div className="min-w-0 space-y-12">
+                      <div className="flex flex-wrap items-center gap-8">
+                        <Pill>{getPromptTypeLabel(activeItem.promptType)}</Pill>
+                        <ModelPill model={activeItem.model} size="xs" />
+                        <Pill>{activeItem.storageLabel}</Pill>
+                        <Pill>{formatDimensions(activeItem)}</Pill>
+                        {activeItem.collectionName && <Pill>{activeItem.collectionName}</Pill>}
+                        {activeItem.tags.slice(0, 5).map((tag) => <Pill key={tag}>{tag}</Pill>)}
+                      </div>
+
+                      <p className="max-w-5xl text-[13px] leading-relaxed text-dim-gray font-sans">
+                        {activeItem.promptDescription || 'Sin descripcion disponible.'}
+                      </p>
+
+                      {activeItem.promptContent && (
+                        <pre className="max-h-60 overflow-auto rounded-(--radius-card) border border-muted-ash bg-midnight-oil/90 p-12 text-[11px] leading-relaxed text-dim-gray font-mono">
+                          {activeItem.promptContent}
+                        </pre>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-8 shrink-0 min-w-[160px]">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => copyPrompt(activeItem)}>
+                        <Copy size={16} aria-hidden="true" />
+                        Copiar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={activeItem.isFavorite ? 'filled' : 'ghost'}
+                        size="sm"
+                        onClick={() => toggleFavoriteForItem(activeItem)}
+                        aria-pressed={activeItem.isFavorite}
+                      >
+                        <Star size={16} fill={activeItem.isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
+                        Favorito
+                      </Button>
+                      <Link href={`/vault/${activeItem.promptLocalId}`}>
+                        <Button type="button" variant="primary" size="sm" className="w-full">
+                          <ExternalLink size={16} aria-hidden="true" />
+                          Abrir
+                        </Button>
+                      </Link>
+                      <Button type="button" variant="danger" size="sm" onClick={() => deleteImage(activeItem)}>
+                        <Trash2 size={16} aria-hidden="true" />
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                </AppModal>
               )}
             </>
           )}
@@ -677,7 +725,7 @@ function GalleryArtwork({
         const rect = event.currentTarget.getBoundingClientRect()
         const x = (event.clientX - rect.left) / rect.width - 0.5
         const y = (event.clientY - rect.top) / rect.height - 0.5
-        frame.style.transform = `perspective(900px) rotateX(${-y * 6}deg) rotateY(${x * 7}deg) scale(${active ? 1.02 : 1})`
+        frame.style.transform = `perspective(900px) rotateX(${-y * 12}deg) rotateY(${x * 14}deg) scale(${active ? 1.02 : 1})`
       }}
       onPointerLeave={(event) => {
         const frame = event.currentTarget.querySelector<HTMLElement>('[data-art-frame]')
@@ -767,99 +815,7 @@ function GalleryArtwork({
   )
 }
 
-function ActivePromptPanel({
-  item,
-  open,
-  onToggleOpen,
-  onCopy,
-  onFavorite,
-  onDelete,
-}: {
-  item: GalleryItem
-  open: boolean
-  onToggleOpen: () => void
-  onCopy: () => void
-  onFavorite: () => void
-  onDelete: () => void
-}) {
-  const summary = (item.promptDescription || item.promptContent || '').replace(/\s+/g, ' ').trim()
 
-  return (
-    <aside className="motion-panel mt-16 rounded-(--radius-card) border border-muted-ash bg-steel-gray">
-      <button
-        type="button"
-        onClick={onToggleOpen}
-        className="flex w-full items-center justify-between gap-16 px-16 py-12 text-left"
-        aria-expanded={open}
-      >
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-widest text-dim-gray">Prompt peek</p>
-          <h2 className="truncate text-[15px] font-bold uppercase tracking-widest text-ghost-white">
-            {item.promptTitle}
-          </h2>
-        </div>
-        <span className="text-[18px] text-dim-gray" aria-hidden="true">{open ? '-' : '+'}</span>
-      </button>
-
-      <div className={[
-        'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200',
-        open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
-      ].join(' ')}>
-        <div className="min-h-0 overflow-hidden border-t border-muted-ash">
-          <div className="grid gap-16 p-16 lg:grid-cols-[1fr_auto] lg:items-start">
-            <div className="min-w-0 space-y-12">
-              <div className="flex flex-wrap items-center gap-8">
-                <Pill>{getPromptTypeLabel(item.promptType)}</Pill>
-                <ModelPill model={item.model} size="xs" />
-                <Pill>{item.storageLabel}</Pill>
-                <Pill>{formatDimensions(item)}</Pill>
-                {item.collectionName && <Pill>{item.collectionName}</Pill>}
-                {item.tags.slice(0, 5).map((tag) => <Pill key={tag}>{tag}</Pill>)}
-              </div>
-
-              <p className="line-clamp-3 max-w-5xl text-[12px] leading-relaxed text-dim-gray">
-                {summary || 'Sin descripcion disponible.'}
-              </p>
-
-              {item.promptContent && (
-                <pre className="max-h-32 overflow-auto rounded-(--radius-card) border border-muted-ash bg-midnight-oil p-12 text-[11px] leading-relaxed text-dim-gray">
-                  {item.promptContent}
-                </pre>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-8 lg:justify-end">
-              <Button type="button" variant="ghost" size="sm" onClick={onCopy}>
-                <Copy size={16} aria-hidden="true" />
-                Copiar
-              </Button>
-              <Button
-                type="button"
-                variant={item.isFavorite ? 'filled' : 'ghost'}
-                size="sm"
-                onClick={onFavorite}
-                aria-pressed={item.isFavorite}
-              >
-                <Star size={16} fill={item.isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
-                Favorito
-              </Button>
-              <Link href={`/vault/${item.promptLocalId}`}>
-                <Button type="button" variant="primary" size="sm">
-                  <ExternalLink size={16} aria-hidden="true" />
-                  Abrir
-                </Button>
-              </Link>
-              <Button type="button" variant="danger" size="sm" onClick={onDelete}>
-                <Trash2 size={16} aria-hidden="true" />
-                Eliminar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-  )
-}
 
 function IconAction({
   label,

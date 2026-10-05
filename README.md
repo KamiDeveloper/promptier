@@ -1,71 +1,117 @@
 # Promptier
 
-> **Prompts for Bros.** Un espacio de trabajo de nivel 099, "local-first", para la gestión, versionado y mejora de prompts con IA.
+> **Prompts for Bros.** Un espacio de trabajo de nivel 099, "local-first", para la gestión, versionado, sincronización y optimización de prompts con IA.
 
-Promptier es un MVP diseñado para ingenieros, artistas y creadores que necesitan un *vault* estructurado y privado para sus prompts. Construido con una arquitectura **local-first** que garantiza el funcionamiento offline, y un motor de sincronización robusto hacia Neon Postgres para cuando la red está disponible.
+Promptier es una estación de trabajo digital diseñada para ingenieros de prompts, artistas visuales y creadores de contenido que trabajan con modelos generativos (Gemini Imagen, ChatGPT / DALL-E, Midjourney, FLUX).
+
+Construido con una arquitectura **Local-First real**, la fuente primaria de verdad vive en el navegador mediante IndexedDB. La aplicación es 100% operativa sin red: consultar, redactar, buscar, copiar prompts y revisar referencias visuales funciona a latencia cero. El respaldo hacia **Neon Serverless Postgres** es manual e idempotente mediante una cola Outbox, garantizando privacidad total y control sobre los datos.
 
 ---
 
 ## 🚀 Características Principales (Features)
 
-*   **Vault Local-First (Offline Support):** Almacenamiento primario en el navegador usando IndexedDB (Dexie). Trabaja sin latencia ni dependencia de conexión a internet.
-*   **Motor de Sincronización (Sync Outbox):** Cola de operaciones asíncronas que replica de forma segura el estado local hacia Neon Postgres cuando hay conexión.
-*   **Asistencia por Inteligencia Artificial (Gemini):** Integración profunda con Google Gemini para evaluar la calidad de los prompts, sugerir etiquetas (auto-tagging) y generar variaciones inteligentes.
-*   **Versionado y Registro de Uso:** Mantiene un historial estricto de las últimas 5 versiones de cada prompt, además de un registro de copias al portapapeles.
-*   **Gestor de Referencias Visuales:** Soporte para adjuntar y optimizar localmente (WebP) imágenes de referencia por cada prompt, vital para flujos de trabajo de generación de imágenes (Midjourney, DALL-E).
-*   **Prompterest (Galería Pública):** Un feed público estilizado y dinámico para publicar *snapshots* y compartir el trabajo con la comunidad.
+* **Bóveda Privada Local-First (Offline por Defecto):** Persistencia instantánea en el navegador usando IndexedDB (Dexie.js). Soporta texto sin formato, JSON estructurado y Markdown, organizados por colecciones y etiquetas con búsqueda reactiva.
+* **Motor de Sincronización Manual (Outbox Pattern):** Cola de operaciones asíncronas con identificadores de idempotencia (`operationId`) y cursores temporales para sincronizar hacia Neon Serverless Postgres únicamente cuando el usuario lo decide.
+* **Suite de Inteligencia Artificial Gemini (`gemini-3-flash-preview`):** Co-piloto oficial con `@google/genai` y respuestas tipadas con Zod:
+  * **Extracción Multimodal (`/api/ai/extract`):** Transcribe prompts desde capturas de pantalla o sintetiza prompts de replicación a partir de imágenes finales generadas.
+  * **Edición Mágica (`/api/ai/magic`):** Refinamiento quirúrgico conversacional (ajusta iluminación, estilo o modificadores preservando la estructura o JSON original).
+  * **Traducción Semántica a Español (`/api/ai/translate`):** Traduce prompts preservando parámetros, tokens técnicos y pesos, permitiendo guardarlos como una rama en el Vault.
+  * **3 Variaciones de Estilo (`/api/ai/variations`):** Genera 3 enfoques creativos manteniendo el concepto central.
+  * **Adaptación Cross-Model (`/api/ai/adapt`):** Convierte la sintaxis de prompts entre diferentes modelos (Midjourney, DALL-E, FLUX, etc.).
+  * **Score y Diagnóstico (`/api/ai/score`):** Calificación de 0 a 100 con diagnóstico técnico de fortalezas y debilidades.
+  * **Sugerencia de Metadatos (`/api/ai/suggest`):** Deduce título, descripción, tipo y tags a partir del prompt crudo.
+* **Soporte BYOK (Bring Your Own Key) con Cifrado AES-256-GCM:** Posibilidad de vincular claves personales de Google Gemini cifradas en reposo en el servidor con AAD y huella digital HMAC-SHA256, permitiendo desbloquear niveles de razonamiento (*Thinking Levels*: Minimal, Low, Medium, High).
+* **Pipeline de Referencias Visuales y Comparador Antes/Después:** Compresión automática en cliente vía Canvas API a 720p en WebP (85% calidad) con hash SHA-256 y control deslizante (slider) en pantalla dividida para evaluar iteraciones de imagen.
+* **Galería Horizontal con Sensor 3D Tilt:** Vista tipo rail fotográfico en `/gallery` con filtros de relación de aspecto e inclinación tridimensional reactiva al giroscopio del móvil (`DeviceOrientationEvent`).
+* **Prompterest (Galería Comunitaria Pública):** Feed público en `/public-prompts` con paginación keyset basada en cursor (`timestamp|id`). Publica *snapshots* desacoplados protegiendo la identidad del creador (muestra únicamente su NickName único) y permite a otros usuarios clonar prompts a su propio Vault local.
+* **Historial de Versiones:** Registro automático de las últimas 5 versiones previas de cada prompt antes de guardados mayores o adaptaciones de IA, restaurables con un solo clic.
+* **Modo Zen y Exportador PNG:** Lectura a pantalla completa sin distracciones y generador en Canvas HTML5 para exportar tarjetas gráficas de 1200x630px en alta resolución listas para redes.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-La arquitectura está orientada al rendimiento, emparejando herramientas modernas en un stack unificado de TypeScript.
-
-| Categoría | Tecnologías Principales |
+| Capa / Módulo | Tecnologías Principales |
 | :--- | :--- |
-| **Framework & Core** | Next.js 16 (App Router), React 19, Bun (Runtime) |
-| **Base de Datos (Local)** | Dexie.js (IndexedDB wrapper), dexie-react-hooks |
-| **Base de Datos (Remota)**| Neon Serverless Postgres (`@neondatabase/serverless`) |
-| **Autenticación** | Neon Auth (basado en Better Auth) con Google OAuth |
-| **Inteligencia Artificial**| Google GenAI SDK (`@google/genai`) |
-| **Estilos & UI** | Tailwind CSS v4, Lucide React, Estética Terminal |
-| **Validación & Tipado** | Zod, TypeScript |
-| **PWA** | `next-pwa` para la experiencia offline |
+| **Framework & Runtime** | Next.js 16 (App Router con RSC + Client Components), React 19, Bun (`bun@1.3.13`) |
+| **Base de Datos (Local)** | Dexie.js v4 (IndexedDB wrapper), `dexie-react-hooks` |
+| **Base de Datos (Remota)** | Neon Serverless Postgres (`@neondatabase/serverless`), WebSockets (`ws`) |
+| **Autenticación** | Neon Auth (Better Auth) con Google OAuth |
+| **Inteligencia Artificial** | Google Gen AI SDK (`@google/genai`) con modelo `gemini-3-flash-preview` |
+| **Seguridad & Criptografía** | Node.js Crypto: Cifrado simétrico AES-256-GCM con AAD y huellas HMAC-SHA256 |
+| **Estilos & Diseño** | Tailwind CSS v4 (@theme CSS-first), Lucide React, Estética Terminal ("099 Workbench") |
+| **PWA & Offline** | `@ducanh2912/next-pwa` (Service Worker, precaching y fallback `/offline`) |
+| **Validación de Datos** | Zod (`zod`), `zod-to-json-schema` para Structured Outputs |
 
 ---
 
 ## 📂 Estructura del Proyecto
 
-El código fuente sigue una arquitectura monolítica modular, separando estrictamente el cliente (local-first) del servidor.
-
 ```text
 promptier/
-├── app/                  # Next.js App Router (Páginas y Endpoints)
-│   ├── api/              # Endpoints Backend (AI, Auth, Profile, Sync, Public)
-│   ├── vault/            # Interfaz principal privada del usuario (Workspace)
-│   ├── public-prompts/   # Interfaz de "Prompterest" (Galería Pública)
-│   ├── offline/          # Fallback UI para la PWA sin conexión
-│   └── globals.css       # Sistema de diseño base y variables de Tailwind
-├── components/           # Componentes de UI modulares y reutilizables
-├── lib/                  # Lógica de Negocio y Utilidades (Core)
-│   ├── db/               # Modelos de Dexie (local), Neon client y scripts SQL
-│   ├── auth/             # Configuración de clientes y sesiones de Neon Auth
-│   ├── models/           # Zod schemas para validación de entidades
-│   └── services/         # Servicios de IA, encriptación y lógica de sincronización
-├── public/               # Assets estáticos (Manifest de PWA, Iconos)
-└── package.json          # Dependencias y scripts de Bun
+├── app/                              # Next.js App Router (Páginas, Layouts y Endpoints)
+│   ├── layout.tsx                    # Shell global, fuentes (Space Mono), Auth & Motion Providers
+│   ├── page.tsx                      # Landing page con detector de PWA install y accesos
+│   ├── globals.css                   # Tailwind v4 theme, variables CSS y utilidades terminal
+│   ├── auth/signin/page.tsx          # Autenticación con Google vía Neon Auth
+│   ├── getstarted/                   # Onboarding obligatorio para creación de NickName
+│   ├── vault/                        # Vault personal privado (Local-First)
+│   │   ├── page.tsx                  # Lista de prompts, búsqueda, colecciones, favoritos
+│   │   ├── new/page.tsx              # Creador manual o CaptureLab (extracción visual)
+│   │   └── [id]/page.tsx             # Detalle, modo Zen, Toque Mágico, versiones, modelo
+│   ├── gallery/page.tsx              # Galería horizontal con aspect ratio real y sensor 3D tilt
+│   ├── public-prompts/               # Prompterest (Feed público de la comunidad)
+│   │   ├── page.tsx                  # Server Component con lectura directa a Neon
+│   │   └── PrompterestFeed.tsx       # Feed interactivo con masonry y cache en IndexedDB
+│   ├── user/page.tsx                 # Configuración de usuario, BYOK Gemini y cuotas
+│   ├── guide/page.tsx                # Guía interactiva paso a paso para la Gemini API
+│   ├── offline/page.tsx              # Pantalla fallback cuando no hay conexión ni cache
+│   └── api/                          # Route Handlers REST (Serverless Endpoints)
+│       ├── ai/                       # Endpoints de IA (adapt, extract, magic, score, etc.)
+│       ├── auth/[...path]/           # Handler proxy de Neon Auth
+│       ├── profile/                  # Consulta y registro de NickName en Neon
+│       ├── public/                   # Feed público, publicación de snapshots y deltas
+│       ├── sync/                     # Sincronización manual de vault e imágenes
+│       └── user/                     # BYOK Gemini keys y settings de thinking
+├── components/                       # Componentes modulares de interfaz
+│   ├── auth/                         # Guards de sesión y nickname (AuthNicknameGate, UserNav)
+│   ├── images/                       # Subida y preview de imágenes
+│   ├── layout/                       # Header general, OfflineBadge
+│   ├── mascot/                       # MascotAnimation y precargador WebM
+│   ├── models/                       # Selectores y pills de modelos AI (Gemini, ChatGPT, etc.)
+│   ├── sync/                         # Panel de sincronización manual y métricas (SyncPanel)
+│   └── ui/                           # Componentes base: Button, Card, Input, Modal, Badge
+├── lib/                              # Lógica de negocio central y acceso a datos
+│   ├── auth.ts / authClient.ts       # Clientes de autenticación servidor y navegador
+│   ├── rateLimit.ts                  # Limitador de tasa por ventanas en memoria
+│   ├── db/                           # Capa de datos
+│   │   ├── database.ts               # Instancia singleton Dexie (IndexedDB)
+│   │   ├── neon.ts                   # Conector Neon Postgres Serverless
+│   │   ├── schema.ts                 # Tipos de datos locales y remotos
+│   │   ├── migrate.ts                # Ejecutor de migraciones SQL
+│   │   ├── migrations/               # Archivos SQL 001 a 009
+│   │   └── repositories/             # Repositorios Dexie (prompt, image, collection, outbox)
+│   ├── models/                       # Definición de modelos soportados (Gemini, ChatGPT, etc.)
+│   ├── schemas/                      # Validaciones Zod (ai.ts, sync.ts)
+│   ├── security/                     # Criptografía AES-256-GCM y hashing (secretCrypto.ts)
+│   ├── services/                     # Servicios centrales (aiService, syncService, imageService)
+│   └── utils/                        # Generación de UUIDs, SHA-256, sanitización
+└── docs/                             # Especificaciones de diseño (DESIGN.md) y arquitectura
 ```
 
 ---
 
 ## ⚙️ Requisitos Previos e Instalación
 
-Para levantar este proyecto en tu entorno local, asegúrate de tener instalado:
-*   **Bun** (v1.3 o superior) - El entorno de ejecución y gestor de paquetes principal.
-*   **Node.js** (v22 o superior) - Requerido para ciertas dependencias de tipado.
-*   Credenciales configuradas de **Neon Database** y **Google Gemini API**.
+### Requisitos Previos
+* **Bun** (`>= 1.3.13`): Entorno de ejecución y gestor de paquetes principal.
+* **Node.js** (`>= 22.0.0`): Para resolución de tipados y herramientas del ecosistema.
+* Cuenta activa en **Neon Database** con **Neon Auth** habilitado (Google OAuth configurado en la consola de Neon).
+* Clave de API de **Google Gemini** (acceso a modelos `gemini-3-flash-preview`).
 
-### Instalación paso a paso
+---
+
+### Instalación Paso a Paso
 
 1. **Clonar el repositorio:**
    ```bash
@@ -79,12 +125,21 @@ Para levantar este proyecto en tu entorno local, asegúrate de tener instalado:
    ```
 
 3. **Configurar variables de entorno:**
-   Copia el archivo de ejemplo y rellena los valores pertinentes:
+   Copia la plantilla base:
    ```bash
    cp .env.example .env.local
    ```
+   Genera las claves criptográficas para cookies y el sistema BYOK (AES-256-GCM):
+   ```bash
+   # En Linux, macOS o Git Bash:
+   openssl rand -base64 32
 
-4. **Ejecutar migraciones (Si aplica/requerido):**
+   # O en PowerShell (Windows):
+   [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+   ```
+
+4. **Ejecutar migraciones en Neon Postgres:**
+   Aplica las tablas de perfiles, colecciones, prompts, outbox, llaves BYOK y sincronización de imágenes:
    ```bash
    bun run db:migrate
    ```
@@ -93,64 +148,82 @@ Para levantar este proyecto en tu entorno local, asegúrate de tener instalado:
    ```bash
    bun run dev
    ```
-   *La aplicación estará disponible en `http://localhost:3000`.*
+   > **Nota:** La aplicación utiliza el flag `--webpack` porque `@ducanh2912/next-pwa` requiere compilación Webpack para el service worker offline.
+   Accede a la aplicación en `http://localhost:3000`.
+
+6. **Verificación de tipos y suite de pruebas:**
+   ```bash
+   # Ejecutar suite de pruebas unitarias (Criptografía y Sync Engine)
+   bun test
+
+   # Verificación estática de tipos TypeScript
+   bun run typecheck
+   ```
 
 ---
 
 ## 🔌 Configuración de Variables de Entorno
 
-A continuación, un esquema base del archivo `.env.local` requerido. Asegúrate de nunca subir claves secretas al repositorio.
+Configura los siguientes valores en tu archivo `.env.local`:
 
 ```env
 # ─── Neon Serverless Postgres ──────────────────────────────────────────────
-DATABASE_URL="postgresql://user:password@ep-tu-id.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgresql://usuario:password@ep-tu-id.aws.neon.tech/neondb?sslmode=require"
 
-# ─── Neon Auth ─────────────────────────────────────────────────────────────
-# Base de configuración en Neon Console
+# ─── Neon Auth (Better Auth) ───────────────────────────────────────────────
+# Obtenido desde Neon Console → Tu Proyecto → Auth
 NEON_AUTH_BASE_URL="https://tu-proyecto.auth.us-east-1.aws.neon.tech"
-# Generar con: openssl rand -base64 32
+# Generar con openssl rand -base64 32
 NEON_AUTH_COOKIE_SECRET="super-secret-cookie-key"
 
-NEXT_PUBLIC_NEON_AUTH_BASE_URL="https://tu-proyecto.auth.us-east-1.aws.neon.tech"
+# URL pública de la aplicación para redirecciones de OAuth
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_NEON_AUTH_BASE_URL="https://tu-proyecto.auth.us-east-1.aws.neon.tech"
 
-# ─── Gemini AI (Server-side Only) ──────────────────────────────────────────
+# ─── Google Gemini AI (Server-Side Only) ───────────────────────────────────
+# Clave compartida para autotagging, score y variaciones
 GEMINI_SHARED_API_KEY="AIzaSy...tu_clave_gemini"
 
-# ─── BYOK (Bring Your Own Key) Encriptación ────────────────────────────────
-# Generar con: openssl rand -base64 32
-BYOK_ENCRYPTION_KEY="secret-encryption-key"
-BYOK_FINGERPRINT_KEY="secret-fingerprint-key"
+# ─── BYOK (Bring Your Own Key) & Encriptación Simétrica ─────────────────────
+# Generar claves con openssl rand -base64 32
+BYOK_ENCRYPTION_KEY="clave-aes-256-en-base64"
+BYOK_FINGERPRINT_KEY="clave-hmac-sha256-en-base64"
 BYOK_ENCRYPTION_KID="v1"
 ```
 
 ---
 
-## 💡 Uso y Endpoints
+## 💡 Arquitectura de Endpoints del API
 
-### Flujo de la Interfaz (Frontend)
-1. **Acceso:** Inicia sesión vía Google OAuth en la landing page (`/`).
-2. **Vault:** Navega a `/vault` para crear colecciones y guardar prompts. Cualquier cambio se almacena instantáneamente en IndexedDB.
-3. **Sincronización:** Cuando el dispositivo recupera o tiene conexión, los cambios se envían silenciosamente hacia Neon Postgres mediante el Outbox.
-4. **Publicación:** En un prompt específico, haz clic en "Publish" para enviarlo a la galería pública (`/public-prompts`).
-
-### Endpoints Clave del API (Backend)
-Las llamadas de red se reducen al mínimo gracias a la arquitectura local-first. Los principales endpoints utilizados son:
-
-*   **`POST /api/sync`**
-    Procesa la cola del *Outbox* local (operaciones de inserción, actualización y eliminación de prompts/colecciones) hacia Neon Postgres.
-*   **`POST /api/ai/score`**
-    Envía el contenido de un prompt a Gemini para recibir una puntuación de calidad (0-100) y sugerencias de mejora.
-*   **`GET /api/public/prompts`**
-    Obtiene el feed de "Prompterest" utilizando paginación eficiente de tipo keyset (Cursor-based) para una carga rápida de listados masivos.
+* **Sincronización Local-First:**
+  * `POST /api/sync/push`: Procesa la cola del *Outbox* local (límite 256KB, idempotencia por `operationId`).
+  * `GET /api/sync/pull`: Obtiene registros actualizados en Neon mediante cursores ISO independientes.
+  * `POST /api/sync/images/push` & `GET /api/sync/images/pull`: Sincronización optimizada de imágenes WebP en base64.
+* **Servicios de IA con Gemini (`gemini-3-flash-preview`):**
+  * `POST /api/ai/score`: Calcula puntuación de calidad (0-100) y áreas de mejora.
+  * `POST /api/ai/suggest`: Genera etiquetas automáticas y sugerencias contextuales.
+  * `POST /api/ai/variations`: Produce exactamente 3 variaciones creativas del prompt.
+  * `POST /api/ai/magic`: Refinamiento quirúrgico conversacional ("Magic Touch").
+  * `POST /api/ai/adapt`: Adapta la sintaxis a modelos destino (Midjourney, DALL-E, FLUX, etc.).
+  * `POST /api/ai/extract`: Extrae y sintetiza prompts a partir de imágenes o capturas adjuntas.
+  * `POST /api/ai/translate`: Traduce prompts a español preservando tokens y modificadores técnicos.
+* **Galería Pública (Prompterest):**
+  * `GET /api/public`: Feed público con paginación basada en cursor keyset (`timestamp|uuid`).
+  * `POST /api/public/publish`: Publica un snapshot inmutable del prompt en el feed comunitario.
+  * `GET /api/public/recent`: Comprobación ligera de deltas para actualizar el feed.
+* **Gestión de Usuario y BYOK:**
+  * `GET / POST / DELETE /api/user/gemini-key`: Almacena y gestiona claves Gemini cifradas con AES-256-GCM.
+  * `GET / PATCH /api/user/ai-settings`: Configuración del nivel de razonamiento (*Thinking Level*: Minimal, Low, Medium, High).
+  * `GET / POST /api/profile`: Consulta y asignación de NickName único.
 
 ---
 
-## 🗺️ Roadmap (De MVP a Producción)
+## 🚀 Despliegue en Producción (Vercel)
 
-Para escalar este MVP hacia una arquitectura totalmente *Enterprise-ready*, se recomiendan los siguientes pasos técnicos:
-
-1. 🧪 **Suite de Pruebas Automatizadas:** Implementar pruebas unitarias completas para los servicios core (IA y Sincronización) y pruebas E2E (Playwright/Cypress) para asegurar que la capa de IndexedDB y el modo Offline funcionen sin regresiones (actualmente hay un comando `bun test` por aprovechar).
-2. 🛡️ **Migración a un Query Builder / ORM Ligero:** Reemplazar las consultas SQL crudas en la capa de sincronización (Backend) por un Query Builder como **Drizzle ORM** o **Kysely** para mayor seguridad de tipos y facilidad de mantenimiento.
-3. 🔄 **Estrategia Avanzada de Resolución de Conflictos (CRDTs o LWW):** Refinar el motor de `SyncStatus` actual del *Outbox* para incluir estrategias de *Last-Write-Wins* basadas en marcas de tiempo rigurosas, o explorar CRDTs si se permite edición colaborativa multi-dispositivo en el futuro.
-4. 🚀 **Pipelines de CI/CD:** Añadir flujos de GitHub Actions u otro sistema para validación estática de código (`lint`, `typecheck`), ejecución de pruebas y despliegues sin interrupciones a Vercel/Neon en los *branches* principales.
+1. Conecta el repositorio a Vercel.
+2. La configuración de Bun está definida en `vercel.json` (`"bunVersion": "1.x"`).
+3. Asegúrate de configurar los comandos en el dashboard del proyecto:
+   * **Build Command**: `bun run build`
+   * **Install Command**: `bun install`
+4. Define en el panel de variables de entorno de Vercel todas las claves listadas en `.env.example`.
+5. Ejecuta las migraciones en la base de datos de producción con `bun run db:migrate`.

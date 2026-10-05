@@ -78,6 +78,7 @@ const MIGRATION_ORDER = [
   '006_templates.sql',
   '007_public_prompt_cover.sql',
   '008_user_ai_keys.sql',
+  '009_prompt_images_sync.sql',
 ]
 
 for (const filename of MIGRATION_ORDER) {
